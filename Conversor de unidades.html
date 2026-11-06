@@ -1,0 +1,387 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Conversor de unidades</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Diseño: una sola tarjeta centrada, pestañas por categoría y resultado grande. */
+:root {
+  --bg: #e9efee;
+  --card: #ffffff;
+  --fg: #16312e;
+  --muted: #587370;
+  --accent: #0f766e;
+  --accent-fg: #ffffff;
+  --line: #c9d8d6;
+  --err: #b42318;
+  --focus: rgba(15, 118, 110, 0.4);
+  --font: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1a19;
+    --card: #152624;
+    --fg: #e3f0ee;
+    --muted: #93b0ac;
+    --accent: #3fc1b2;
+    --accent-fg: #06201d;
+    --line: #2b4440;
+    --err: #ff8a7a;
+    --focus: rgba(63, 193, 178, 0.45);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1a19;
+  --card: #152624;
+  --fg: #e3f0ee;
+  --muted: #93b0ac;
+  --accent: #3fc1b2;
+  --accent-fg: #06201d;
+  --line: #2b4440;
+  --err: #ff8a7a;
+  --focus: rgba(63, 193, 178, 0.45);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: 16px;
+  padding-block: 24px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex;
+  justify-content: center;
+}
+
+.tarjeta {
+  width: 100%;
+  max-width: 440px;
+  min-width: 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 24px;
+}
+
+h1 {
+  margin: 0 0 18px;
+  font-size: 1.45rem;
+  text-wrap: balance;
+}
+
+.pestanas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.pestanas button {
+  flex: 1 1 auto;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.pestanas button.activa {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
+  font-weight: 600;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 16px;
+}
+.campo span {
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+input, select {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--fg);
+  font: inherit;
+}
+input { font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+
+input:focus-visible, select:focus-visible, button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.fila {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.intercambiar {
+  flex: none;
+  margin-bottom: 16px;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--accent);
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.resultado {
+  min-height: 2.6rem;
+  margin: 8px 0 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.mensaje {
+  min-height: 1.2rem;
+  margin: 4px 0 0;
+  text-align: center;
+  color: var(--err);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 380px) {
+  .fila { flex-direction: column; align-items: stretch; }
+  .intercambiar { align-self: center; margin: 0 0 16px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .pestanas button { transition: background 0.15s, color 0.15s; }
+}
+</style>
+
+<main class="tarjeta">
+  <h1>Conversor de unidades</h1>
+
+  <div class="pestanas" id="pestanas" role="tablist" aria-label="Categoría"></div>
+
+  <label class="campo">
+    <span>Valor</span>
+    <input id="valor" type="number" inputmode="decimal" step="any" value="1" aria-describedby="mensaje">
+  </label>
+
+  <div class="fila">
+    <label class="campo">
+      <span>De</span>
+      <select id="desde"></select>
+    </label>
+    <button id="intercambiar" type="button" class="intercambiar" aria-label="Intercambiar unidades">⇄</button>
+    <label class="campo">
+      <span>A</span>
+      <select id="hasta"></select>
+    </label>
+  </div>
+
+  <p class="resultado" id="resultado" aria-live="polite"></p>
+  <p class="mensaje" id="mensaje" role="alert"></p>
+</main>
+
+<script>
+/**
+ * Lógica de conversión de unidades (sin dependencias del DOM, para poder probarla).
+ * Cada unidad (salvo temperatura) se define con su factor respecto a la unidad base.
+ */
+const CATEGORIAS = {
+  longitud: {
+    nombre: "Longitud",
+    base: "m",
+    unidades: {
+      mm: { nombre: "Milímetros", factor: 0.001 },
+      cm: { nombre: "Centímetros", factor: 0.01 },
+      m: { nombre: "Metros", factor: 1 },
+      km: { nombre: "Kilómetros", factor: 1000 },
+      in: { nombre: "Pulgadas", factor: 0.0254 },
+      ft: { nombre: "Pies", factor: 0.3048 },
+      mi: { nombre: "Millas", factor: 1609.344 },
+    },
+  },
+  masa: {
+    nombre: "Masa",
+    base: "kg",
+    unidades: {
+      g: { nombre: "Gramos", factor: 0.001 },
+      kg: { nombre: "Kilogramos", factor: 1 },
+      t: { nombre: "Toneladas", factor: 1000 },
+      oz: { nombre: "Onzas", factor: 0.028349523125 },
+      lb: { nombre: "Libras", factor: 0.45359237 },
+    },
+  },
+  volumen: {
+    nombre: "Volumen",
+    base: "l",
+    unidades: {
+      ml: { nombre: "Mililitros", factor: 0.001 },
+      l: { nombre: "Litros", factor: 1 },
+      m3: { nombre: "Metros cúbicos", factor: 1000 },
+      gal: { nombre: "Galones (EE. UU.)", factor: 3.785411784 },
+    },
+  },
+  temperatura: {
+    nombre: "Temperatura",
+    base: "C",
+    unidades: {
+      C: { nombre: "Celsius" },
+      F: { nombre: "Fahrenheit" },
+      K: { nombre: "Kelvin" },
+    },
+  },
+};
+
+function aCelsius(valor, unidad) {
+  if (unidad === "C") return valor;
+  if (unidad === "F") return ((valor - 32) * 5) / 9;
+  return valor - 273.15; // Kelvin
+}
+
+function desdeCelsius(valor, unidad) {
+  if (unidad === "C") return valor;
+  if (unidad === "F") return (valor * 9) / 5 + 32;
+  return valor + 273.15; // Kelvin
+}
+
+/**
+ * Convierte `valor` de la unidad `desde` a la unidad `hasta` dentro de una categoría.
+ * Lanza un Error si los datos no son válidos.
+ */
+function convertir(categoria, valor, desde, hasta) {
+  const cat = CATEGORIAS[categoria];
+  if (!cat) throw new Error("Categoría desconocida");
+  if (!(desde in cat.unidades) || !(hasta in cat.unidades)) {
+    throw new Error("Unidad desconocida");
+  }
+  if (typeof valor !== "number" || !Number.isFinite(valor)) {
+    throw new Error("El valor debe ser un número");
+  }
+
+  if (categoria === "temperatura") {
+    const celsius = aCelsius(valor, desde);
+    if (celsius < -273.15 - 1e-9) {
+      throw new Error("Por debajo del cero absoluto");
+    }
+    return desdeCelsius(celsius, hasta);
+  }
+
+  const enBase = valor * cat.unidades[desde].factor;
+  return enBase / cat.unidades[hasta].factor;
+}
+
+/** Redondea para mostrar, evitando ruido de coma flotante (p. ej. 0.30000000000000004). */
+function formatear(numero) {
+  if (numero === 0) return "0";
+  const abs = Math.abs(numero);
+  if (abs >= 1e9 || abs < 1e-6) return numero.toExponential(4);
+  return String(Number(numero.toPrecision(10)));
+}
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { CATEGORIAS, convertir, formatear };
+}
+
+</script>
+<script>
+const pestanas = document.getElementById("pestanas");
+const campoValor = document.getElementById("valor");
+const selDesde = document.getElementById("desde");
+const selHasta = document.getElementById("hasta");
+const resultado = document.getElementById("resultado");
+const mensaje = document.getElementById("mensaje");
+const botonIntercambiar = document.getElementById("intercambiar");
+
+let categoriaActual = "longitud";
+
+function rellenarUnidades() {
+  const unidades = CATEGORIAS[categoriaActual].unidades;
+  const claves = Object.keys(unidades);
+  [selDesde, selHasta].forEach((sel) => {
+    sel.innerHTML = "";
+    claves.forEach((clave) => {
+      const opcion = document.createElement("option");
+      opcion.value = clave;
+      opcion.textContent = unidades[clave].nombre + " (" + clave + ")";
+      sel.appendChild(opcion);
+    });
+  });
+  selDesde.value = claves[0];
+  selHasta.value = claves[1];
+}
+
+function marcarPestana() {
+  pestanas.querySelectorAll("button").forEach((boton) => {
+    const activa = boton.dataset.categoria === categoriaActual;
+    boton.classList.toggle("activa", activa);
+    boton.setAttribute("aria-selected", String(activa));
+  });
+}
+
+function actualizar() {
+  mensaje.textContent = "";
+  const texto = campoValor.value.trim();
+  if (texto === "") {
+    resultado.textContent = "";
+    return;
+  }
+  try {
+    const valor = Number(texto);
+    const r = convertir(categoriaActual, valor, selDesde.value, selHasta.value);
+    resultado.textContent =
+      formatear(valor) + " " + selDesde.value + " = " + formatear(r) + " " + selHasta.value;
+  } catch (error) {
+    resultado.textContent = "";
+    mensaje.textContent = error.message;
+  }
+}
+
+function cambiarCategoria(clave) {
+  categoriaActual = clave;
+  rellenarUnidades();
+  marcarPestana();
+  actualizar();
+}
+
+Object.keys(CATEGORIAS).forEach((clave) => {
+  const boton = document.createElement("button");
+  boton.type = "button";
+  boton.setAttribute("role", "tab");
+  boton.dataset.categoria = clave;
+  boton.textContent = CATEGORIAS[clave].nombre;
+  boton.addEventListener("click", () => cambiarCategoria(clave));
+  pestanas.appendChild(boton);
+});
+
+botonIntercambiar.addEventListener("click", () => {
+  const anterior = selDesde.value;
+  selDesde.value = selHasta.value;
+  selHasta.value = anterior;
+  actualizar();
+});
+
+[campoValor, selDesde, selHasta].forEach((el) => {
+  el.addEventListener("input", actualizar);
+});
+
+cambiarCategoria(categoriaActual);
+
+</script>
+
+</body></html>
